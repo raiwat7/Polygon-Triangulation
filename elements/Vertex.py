@@ -5,6 +5,7 @@ class Vertex:
         self.point = point  # A Point object
         self.incident_edge = None  # One of the edges connected to this vertex
         self.id = Vertex._id_counter
+        self.chain_val = 0
         Vertex._id_counter += 1
 
     def __repr__(self):

@@ -118,6 +118,29 @@ class DCEL:
 
     def get_vertices(self):
         return [(p.point.x, p.point.y) for p in self.vertices]
+    
+    def get_vertices_of_face(self, face: Face):
+        """
+        Get the vertices in a face in the order they appear along the boundary.
+        """
+        vertices = []
+        edge = face.outer_component
+        start = edge
+
+        while True:
+            vertices.append(edge.origin)
+            edge = edge.next
+            if edge == start:
+                break
+
+        return vertices
+    
+    def are_vertices_in_same_face(self, v1: Vertex, v2: Vertex, face: Face):
+        """
+        Check if two vertices belong to the same face.
+        """
+        vertices = self.get_vertices_of_face(face)
+        return v1 in vertices and v2 in vertices
 
     def calculate_area(self):
         # Using the Shoelace Theorem to calculate area
