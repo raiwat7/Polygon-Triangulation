@@ -2,11 +2,88 @@ import math
 import random
 
 import matplotlib.pyplot as plt
+from tabulate import tabulate
 
 from elements.Face import Face
 from elements.HalfEdge import HalfEdge
 from elements.Point import Point
 from elements.Vertex import Vertex
+
+
+def diagonal_exist(vertex1, vertex2, face):
+    def area_of_triangle2(a, b, c):
+        return (b.point.x - a.point.x) * (c.point.y - a.point.y) - (c.point.x - a.point.x) * (b.point.y - a.point.y)
+
+    def left(a, b, c):
+        return area_of_triangle2(a, b, c) > 0
+
+    def left_on(a, b, c):
+        return area_of_triangle2(a, b, c) >= 0
+
+    def collinear(a, b, c):
+        return area_of_triangle2(a, b, c) == 0
+
+    def xor(a, b):
+        return a != b
+
+    def proper_intersection(a, b, c, d):
+        if collinear(a, b, c) or collinear(a, b, d) or collinear(c, d, a) or collinear(c, d, b):
+            return False
+        return xor(left(a, b, c), left(a, b, d)) and xor(left(c, d, a), left(c, d, b))
+
+    def between(a, b, c):
+        if not collinear(a, b, c):
+            return False
+
+        if a.point.x != b.point.x:
+            return (a.point.x <= c.point.x <= b.point.x) or (a.point.x >= c.point.x >= b.point.x)
+        else:
+            return (a.point.y <= c.point.y <= b.point.y) or (a.point.y >= c.point.y >= b.point.y)
+
+    def intersect(a, b, c, d):
+        if proper_intersection(a, b, c, d):
+            return True
+        elif between(a, b, c) or between(a, b, d) or between(c, d, a) or between(c, d, b):
+            return True
+        else:
+            return False
+
+    def diagonalize(a, b, face_queried):
+        edge = face_queried.outer_component
+        start = edge
+
+        while True:
+            if edge.origin != a and edge.origin != b and edge.next.origin != a and edge.next.origin != b and intersect(
+                    a, b, edge.origin, edge.next.origin):
+                return False
+
+            edge = edge.next
+            if edge == start:
+                break
+
+        return True
+
+    def in_cone(a, b, face_queried):
+        edge = face_queried.outer_component
+        start = edge
+        prev_vertex = a
+        next_vertex = a
+        while True:
+            if edge.next.origin == a:
+                prev_vertex = edge.origin
+
+            if edge.origin == a:
+                next_vertex = edge.next.origin
+            edge = edge.next
+            if edge == start:
+                break
+
+        if left_on(a, next_vertex, prev_vertex):
+            return left(a, b, prev_vertex) and left(b, a, next_vertex)
+        else:
+            return not (left_on(a, b, next_vertex) and left_on(b, a, prev_vertex))
+
+    return in_cone(vertex1, vertex2, face) and in_cone(vertex2, vertex1, face) and diagonalize(vertex1, vertex2, face)
 
 
 class DCEL:
@@ -91,7 +168,7 @@ class DCEL:
 
         # Connect the face to one of its outer components
         face.outer_component = half_edges[0]
-        unbounded_face.inner_component = twin_half_edges[0]
+        unbounded_face.inner_component = [twin_half_edges[0]]
 
         # Add half-edges to the DCEL
         self.half_edges.extend(half_edges)
@@ -100,21 +177,34 @@ class DCEL:
     def display_dcel(self):
         # Display vertices
         print("Vertices:")
+        vertex_table = []
         for vertex in self.vertices:
-            print(f"{vertex} Incident Edge: {vertex.incident_edge}")
+            vertex_table.append([vertex.id, f"({vertex.point.x}, {vertex.point.y})", vertex.incident_edge.id])
+        print(tabulate(vertex_table, headers=["Vertex ID", "Coordinates", "Incident Edge ID"], tablefmt="grid"))
 
         # Display half-edges
         print("\nHalfEdges:")
+        half_edge_table = []
         for edge in self.half_edges:
-            print(
-                f"{edge} Twin Edge: {edge.twin} Next Edge: {edge.next} Previous Edge: {edge.prev} Incident Face: {edge.incident_face}")
+            half_edge_table.append(
+                [edge.id, edge.origin.id, edge.twin.id if edge.twin else "None", edge.next.id if edge.next else "None",
+                    edge.prev.id if edge.prev else "None", edge.incident_face.id if edge.incident_face else "None",
+                    edge.helper.id if edge.helper else "None"])
+        print(tabulate(half_edge_table,
+                       headers=["Half-Edge ID", "Origin Vertex", "Twin Edge ID", "Next Edge ID", "Previous Edge ID",
+                           "Incident Face ID", "Edge Helper"], tablefmt="grid"))
 
         # Display faces
         print("\nFaces:")
+        face_table = []
         for face in self.faces:
-            outer = face.outer_component
-            inner = face.inner_component
-            print(f"{face}: Outer Component Half-Edge: {outer} Inner Component Half-Edge: {inner}")
+            outer = face.outer_component.id if face.outer_component else "None"
+            inner = [he.id for he in face.inner_component] if face.inner_component else "None"
+            # Convert the list of inner component half-edges to a string for display
+            inner_str = ', '.join(map(str, inner)) if isinstance(inner, list) else "None"
+            face_table.append([face.id, outer, inner_str])
+        print(tabulate(face_table, headers=["Face ID", "Outer Component Half-Edge ID", "Inner Component Half-Edge IDs"],
+                       tablefmt="grid"))
 
     def add_diagonal(self, v1, v2):
         """
@@ -179,8 +269,8 @@ class DCEL:
         """
         Plots the DCEL with vertex and half-edge annotations.
         Vertices are annotated with their coordinates, and half-edges are annotated with their IDs.
+        Handles small edges by adjusting the placement of annotations to avoid overlap.
         """
-
         plt.figure(figsize=(8, 8))
 
         # Plot vertices and annotate them
@@ -195,12 +285,6 @@ class DCEL:
 
             # Plot the edge between origin and destination
             plt.plot([origin.point.x, destination.point.x], [origin.point.y, destination.point.y], 'k-')
-
-            # Calculate the 1/3rd and 2/3rd points of the edge
-            third_x = (2 * origin.point.x + destination.point.x) / 3
-            third_y = (2 * origin.point.y + destination.point.y) / 3
-
-            plt.text(third_x, third_y, f"HE{half_edge.id}", fontsize=9, color='red')
 
         # Set equal scaling and remove axis for better visualization
         plt.axis('equal')
