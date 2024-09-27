@@ -1,25 +1,27 @@
-from Face import Face
-from Vertex import Vertex
-from HalfEdge import HalfEdge
+import matplotlib.pyplot as plt
+
+from elements.Face import Face
+from elements.HalfEdge import HalfEdge
+from elements.Vertex import Vertex
 
 
 class DCEL:
-    def __init__(self):
-        self.vertices = []
-        self.half_edges = []
-        self.faces = []
+    def __init__(self, vertices=None, half_edges=None, faces=None):
+        self.vertices = vertices if vertices else []
+        self.half_edges = half_edges if half_edges else []
+        self.faces = faces if faces else []
 
     def create_polygon(self, polygon):
         n = len(polygon.vertices)
         if n < 3:
             raise ValueError("A polygon must have at least 3 vertices.")
 
+        unbounded_face = Face()
+        self.faces.append(unbounded_face)
+
         # Create a face for the polygon
         face = Face()
         self.faces.append(face)
-
-        unbounded_face = Face()
-        self.faces.append(unbounded_face)
 
         # Create vertices
         dcel_vertices = [Vertex(point) for point in polygon.vertices]
@@ -42,12 +44,12 @@ class DCEL:
             dcel_vertices[i].incident_edge = half_edges[i]
 
             # Twin edge (opposite direction)
-            twin_half_edges[i].origin = dcel_vertices[next_index]
-            twin_half_edges[i].next = twin_half_edges[prev_index]
-            twin_half_edges[i].prev = twin_half_edges[next_index]
+            twin_half_edges[i].origin = dcel_vertices[(n - i) % n]
+            twin_half_edges[i].next = twin_half_edges[next_index]
+            twin_half_edges[i].prev = twin_half_edges[prev_index]
             twin_half_edges[i].incident_face = unbounded_face  # No face, these are outside the polygon
-            half_edges[i].twin = twin_half_edges[i]
-            twin_half_edges[i].twin = half_edges[i]
+            half_edges[i].twin = twin_half_edges[n - i - 1]
+            twin_half_edges[n - i - 1].twin = half_edges[i]
 
         # Connect the face to one of its outer components
         face.outer_component = half_edges[0]
@@ -66,7 +68,8 @@ class DCEL:
         # Display half-edges
         print("\nHalfEdges:")
         for edge in self.half_edges:
-            print(f"{edge} Previous Edge: {edge.prev} Next Edge: {edge.next} Twin Edge: {edge.twin} Incident Face: {edge.incident_face}")
+            print(
+                f"{edge} Twin Edge: {edge.twin} Next Edge: {edge.next} Previous Edge: {edge.prev} Incident Face: {edge.incident_face}")
 
         # Display faces
         print("\nFaces:")
@@ -74,3 +77,95 @@ class DCEL:
             outer = face.outer_component
             inner = face.inner_component
             print(f"{face}: Outer Component Half-Edge: {outer} Inner Component Half-Edge: {inner}")
+
+    def add_diagonal(self, v1, v2):
+        """
+        Add a diagonal between vertices v1 and v2, updating the DCEL structure.
+        This results in the creation of a new face and updating the half-edges and vertices.
+        """
+        # Step 1: Create two new half-edges for the diagonal
+        half_edge_1 = HalfEdge(origin=v1)
+        half_edge_2 = HalfEdge(origin=v2)
+
+        # Set twins
+        half_edge_1.twin = half_edge_2
+        half_edge_2.twin = half_edge_1
+
+        # Step 2: Locate the half-edges around v1 and v2 that will be affected
+        # These half-edges are part of the existing face that will be split
+        incident_edge_v1 = v1.incident_edge
+        incident_edge_v2 = v2.incident_edge
+
+        # Step 3: Adjust next and prev pointers for the new diagonal edges
+        # Find the half-edges that come before and after the new diagonal in the face loop
+
+        # v1 -> v2 (clockwise)
+        half_edge_1.next = incident_edge_v2
+        half_edge_1.prev = incident_edge_v1.prev
+
+        # v2 -> v1 (counter-clockwise)
+        half_edge_2.next = incident_edge_v1
+        half_edge_2.prev = incident_edge_v2.prev
+
+        # Adjust the existing half-edges to account for the diagonal
+        incident_edge_v1.prev.next = half_edge_1
+        incident_edge_v2.prev.next = half_edge_2
+
+        incident_edge_v1.prev = half_edge_2
+        incident_edge_v2.prev = half_edge_1
+
+        # Step 4: Create the new face
+        new_face = Face(outer_component=half_edge_1)
+        self.faces[len(self.faces) - 1].outer_component = half_edge_2
+        self.faces.append(new_face)
+
+        # Step 5: Update the incident face for the new diagonal half-edges
+        half_edge_1.incident_face = incident_edge_v1.incident_face
+        half_edge_2.incident_face = new_face
+
+        # Update all affected half-edges incident face for the new face
+        current_edge = half_edge_2.next
+        while current_edge != half_edge_2:
+            current_edge.incident_face = new_face
+            current_edge = current_edge.next
+
+        # Step 6: Update the vertex incident edges
+        v1.incident_edge = half_edge_1
+        v2.incident_edge = half_edge_2
+
+        # Step 7: Add the new half-edges to the DCEL
+        self.half_edges.append(half_edge_1)
+        self.half_edges.append(half_edge_2)
+
+    def plot_dcel(self):
+        """
+        Plots the DCEL with vertex and half-edge annotations.
+        Vertices are annotated with their coordinates, and half-edges are annotated with their IDs.
+        """
+
+        plt.figure(figsize=(8, 8))
+
+        # Plot vertices and annotate them
+        for vertex in self.vertices:
+            plt.plot(vertex.point.x, vertex.point.y, 'bo')  # Plot vertex as a blue dot
+            plt.text(vertex.point.x, vertex.point.y, f"V{vertex.id}", fontsize=9, ha='right')
+
+        # Plot edges and annotate half-edges at 1/3rd and 2/3rd points
+        for half_edge in self.half_edges:
+            origin = self.vertices[half_edge.origin.id]
+            destination = self.vertices[half_edge.next.origin.id]
+
+            # Plot the edge between origin and destination
+            plt.plot([origin.point.x, destination.point.x], [origin.point.y, destination.point.y], 'k-')
+
+            # Calculate the 1/3rd and 2/3rd points of the edge
+            third_x = (2 * origin.point.x + destination.point.x) / 3
+            third_y = (2 * origin.point.y + destination.point.y) / 3
+
+            plt.text(third_x, third_y, f"HE{half_edge.id}", fontsize=9, color='red')
+
+        # Set equal scaling and remove axis for better visualization
+        plt.axis('equal')
+        plt.grid(False)
+        plt.gca().set_axis_off()  # Hide axes
+        plt.show()

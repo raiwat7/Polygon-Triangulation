@@ -1,13 +1,17 @@
-import random
 import math
-from Point import Point
+import random
+
 import matplotlib.pyplot as plt
 
+from elements.Point import Point
+
+
 class Polygon:
-    def __init__(self, n):
-        self.n = n
-        self.vertices = []
-        self.random_simple_polygon()
+    def __init__(self, n=None, vertices=None):
+        self.n = n if n else len(vertices)
+        self.vertices = vertices if vertices else []
+        if vertices is None:
+            self.random_simple_polygon()
 
     def random_simple_polygon(self):
         # Generate n random points
@@ -41,10 +45,8 @@ class Polygon:
 
         # Display the coordinates near each vertex
         for i, vertex in enumerate(self.vertices):
-            plt.annotate(f'({vertex.x}, {vertex.y})',
-                         (vertex.x, vertex.y),
-                         textcoords="offset points",
-                         xytext=(5, 5),  # Offset from the vertex position
+            plt.annotate(f'({vertex.x}, {vertex.y})', (vertex.x, vertex.y), textcoords="offset points", xytext=(5, 5),
+                         # Offset from the vertex position
                          ha='center')
 
         # Hide the x and y axes and the grid lines
