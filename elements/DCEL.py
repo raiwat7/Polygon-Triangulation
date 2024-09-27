@@ -1,18 +1,60 @@
+import math
+import random
+
 import matplotlib.pyplot as plt
 
 from elements.Face import Face
 from elements.HalfEdge import HalfEdge
+from elements.Point import Point
 from elements.Vertex import Vertex
 
 
 class DCEL:
-    def __init__(self, vertices=None, half_edges=None, faces=None):
-        self.vertices = vertices if vertices else []
-        self.half_edges = half_edges if half_edges else []
-        self.faces = faces if faces else []
+    def __init__(self, n=None, vertices=None, half_edges=None, faces=None):
+        self.n = n if n else len(vertices)
+        if n is not None:
+            self.random_simple_polygon()
+        else:
+            self.vertices = vertices if vertices else []
+            self.half_edges = half_edges if half_edges else []
+            self.faces = faces if faces else []
 
-    def create_polygon(self, polygon):
-        n = len(polygon.vertices)
+            self.create_polygon()
+
+    def random_simple_polygon(self):
+        # Generate n random points
+        points = [Vertex(Point(random.randint(-100, 100), random.randint(-100, 100))) for _ in range(self.n)]
+
+        # Find centroid to sort the points by their polar angle relative to the centroid
+        centroid_x = sum(p.point.x for p in points) / self.n
+        centroid_y = sum(p.point.y for p in points) / self.n
+        centroid = Vertex(Point(centroid_x, centroid_y))
+
+        # Sorting points based on the angle with respect to the centroid ensures a simple polygon
+        def polar_angle(vertex):
+            return math.atan2(vertex.point.y - centroid.point.y, vertex.point.x - centroid.point.x)
+
+        points.sort(key=polar_angle)
+
+        # Store sorted points as vertices of the polygon
+        self.vertices = points
+
+    def get_vertices(self):
+        return [(p.point.x, p.point.y) for p in self.vertices]
+
+    def calculate_area(self):
+        # Using the Shoelace Theorem to calculate area
+        n = len(self.vertices)
+        area = 0
+        for i in range(n):
+            x1, y1 = self.vertices[i].point.x, self.vertices[i].point.y
+            x2, y2 = self.vertices[(i + 1) % n].point.x, self.vertices[
+                (i + 1) % n].point.y  # Closing the polygon by wrapping
+            area += (x1 * y2) - (x2 * y1)
+        return abs(area) / 2
+
+    def create_polygon(self):
+        n = len(self.vertices)
         if n < 3:
             raise ValueError("A polygon must have at least 3 vertices.")
 
@@ -22,10 +64,6 @@ class DCEL:
         # Create a face for the polygon
         face = Face()
         self.faces.append(face)
-
-        # Create vertices
-        dcel_vertices = [Vertex(point) for point in polygon.vertices]
-        self.vertices.extend(dcel_vertices)
 
         # Create half-edges
         half_edges = [HalfEdge() for _ in range(n)]
@@ -37,14 +75,14 @@ class DCEL:
             prev_index = (i - 1 + n) % n
 
             # Current edge
-            half_edges[i].origin = dcel_vertices[i]
+            half_edges[i].origin = self.vertices[i]
             half_edges[i].next = half_edges[next_index]
             half_edges[i].prev = half_edges[prev_index]
             half_edges[i].incident_face = face
-            dcel_vertices[i].incident_edge = half_edges[i]
+            self.vertices[i].incident_edge = half_edges[i]
 
             # Twin edge (opposite direction)
-            twin_half_edges[i].origin = dcel_vertices[(n - i) % n]
+            twin_half_edges[i].origin = self.vertices[(n - i) % n]
             twin_half_edges[i].next = twin_half_edges[next_index]
             twin_half_edges[i].prev = twin_half_edges[prev_index]
             twin_half_edges[i].incident_face = unbounded_face  # No face, these are outside the polygon

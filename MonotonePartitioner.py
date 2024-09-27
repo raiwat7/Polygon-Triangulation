@@ -1,19 +1,15 @@
-from elements.DCEL import DCEL
 from elements.StatusTree import StatusTree
 
 
 def is_left_turn(prev, current, next_vertex):
     """ Determines if the vertices form a left turn (counterclockwise turn) """
     return (next_vertex.point.x - current.point.x) * (prev.point.y - current.point.y) - (
-                prev.point.x - current.point.x) * (next_vertex.point.y - current.point.y) > 0
+            prev.point.x - current.point.x) * (next_vertex.point.y - current.point.y) > 0
 
 
 class MonotonePartitioner:
-    def __init__(self, polygon):
-        self.polygon = polygon  # A Polygon object
-        self.monotone_polygons = []  # List to store DCELs of monotone polygons
-        self.dcel = DCEL()  # The DCEL representation of the original polygon
-        self.dcel.create_polygon(polygon)  # Populate DCEL from the polygon
+    def __init__(self, dcel):
+        self.dcel = dcel  # The DCEL representation of the original polygon
         self.status_tree = StatusTree()  # Status structure (active edges) for the sweep line
         self.vertex_types = {}  # To store classified vertices
         self.new_diagonals = []
