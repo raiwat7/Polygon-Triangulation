@@ -1,7 +1,3 @@
-from audioop import reverse
-
-from sympy.physics.units import second
-
 from elements.DCEL import DCEL, Vertex, HalfEdge, Face, diagonal_exist
 from collections import deque
 
@@ -57,11 +53,6 @@ class MonotoneTriangulation:
                         v = stack.pop()
                         if diagonal_exist(current_vertex, v, face):
                             self.add_diagonal(current_vertex, v)
-                    #     else:
-                    #         not_used.append(v)
-                    # reverse(not_used)
-                    # for v in not_used:
-                    #
                     stack.append(top_vertex)
                     stack.append(current_vertex)
                 else:
