@@ -60,7 +60,7 @@ class MonotoneTriangulation:
                     if diagonal_exist(current_vertex, second_top_vertex, face):
                         self.add_diagonal(current_vertex, second_top_vertex)
                         stack.pop()
-                        stack.append(current_vertex)
+                    stack.append(current_vertex)
             else:
                 second_vertex = stack.pop()
                 top_vertex = stack.pop()
