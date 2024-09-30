@@ -6,6 +6,7 @@ class Vertex:
         self.incident_edge = []  # Edges originating from this vertex
         self.id = Vertex._id_counter
         self.chain_val = 0
+        self.color = None
         Vertex._id_counter += 1
 
     def __repr__(self):
