@@ -5,6 +5,7 @@ class Face:
         self.outer_component = outer_component  # A half-edge on the outer boundary
         self.inner_component = inner_component if inner_component else []  # A half-edge on the inner boundary (for holes), optional
         self.id = Face._id_counter
+        self.centroid = None
         Face._id_counter += 1
 
     def __repr__(self):

@@ -3,7 +3,7 @@ class Vertex:
 
     def __init__(self, point):
         self.point = point  # A Point object
-        self.incident_edge = None  # One of the edges connected to this vertex
+        self.incident_edge = []  # Edges originating from this vertex
         self.id = Vertex._id_counter
         self.chain_val = 0
         Vertex._id_counter += 1

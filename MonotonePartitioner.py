@@ -68,7 +68,7 @@ class MonotonePartitioner:
         """ Handle start vertex during the sweep """
         # Find the next edge in the polygon and add it to the status
         print(f"Start vertex at {vertex}")
-        edge = vertex.incident_edge
+        edge = vertex.incident_edge[0]
         self.status_tree.insert(edge)
         edge.helper = vertex  # Set helper to the current vertex
         print(f"Adding edge {edge} to Status Tree")
@@ -76,7 +76,7 @@ class MonotonePartitioner:
     def handle_end_vertex(self, vertex):
         """ Handle end vertex during the sweep """
         print(f"End vertex at {vertex}")
-        edge = vertex.incident_edge.prev
+        edge = vertex.incident_edge[0].prev
         if edge.helper and self.vertex_types[edge.helper.id] == 'merge':
             self.add_diagonal(edge.helper, vertex)
         self.status_tree.delete(edge)
@@ -94,7 +94,7 @@ class MonotonePartitioner:
             # Set the new helper for the left edge
             left_edge.helper = vertex
 
-        edge = vertex.incident_edge
+        edge = vertex.incident_edge[0]
         self.status_tree.insert(edge)
         edge.helper = vertex
 
@@ -103,7 +103,7 @@ class MonotonePartitioner:
     def handle_merge_vertex(self, vertex):
         """ Handle merge vertex by adding a diagonal """
         print(f"Merge Vertex at {vertex}")
-        edge = vertex.incident_edge.prev
+        edge = vertex.incident_edge[0].prev
         if edge and self.vertex_types[edge.helper.id] == 'merge':
             self.add_diagonal(edge.helper, vertex)
         self.status_tree.delete(edge)
@@ -120,12 +120,12 @@ class MonotonePartitioner:
         # Check whether it is on the left or right chain of the polygon
         if self.vertex_types[vertex.id] == 'regular_left':
             print(f"Interior of Polygon lies to the right of the regular vertex")
-            edge = vertex.incident_edge.prev
+            edge = vertex.incident_edge[0].prev
             if edge and self.vertex_types[edge.helper.id] == 'merge':
                 self.add_diagonal(edge.helper, vertex)
             self.status_tree.delete(edge)
             print(f"Removing edge {edge} from Status Tree")
-            new_edge = vertex.incident_edge
+            new_edge = vertex.incident_edge[0]
             self.status_tree.insert(new_edge)
             print(f"Adding edge {new_edge} to Status Tree")
             new_edge.helper = vertex
@@ -138,6 +138,7 @@ class MonotonePartitioner:
 
     def add_diagonal(self, vertex1, vertex2):
         """ Add a diagonal between two vertices to make the polygon monotone """
+        if (vertex1, vertex2) in self.new_diagonals: return
         print(f"Adding diagonal between {vertex1} and {vertex2}")
         self.new_diagonals.append((vertex1, vertex2))
 

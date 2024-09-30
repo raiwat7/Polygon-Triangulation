@@ -90,35 +90,38 @@ class DCEL:
     def __init__(self, n=None, vertices=None, half_edges=None, faces=None):
         self.n = n if n else len(vertices)
         if n is not None:
+            self.vertices = []
+            self.half_edges = []
+            self.faces = []
             self.random_simple_polygon()
         else:
             self.vertices = vertices if vertices else []
             self.half_edges = half_edges if half_edges else []
             self.faces = faces if faces else []
 
-            self.create_polygon()
+        self.create_polygon()
 
     def random_simple_polygon(self):
         # Generate n random points
-        points = [Vertex(Point(random.randint(-100, 100), random.randint(-100, 100))) for _ in range(self.n)]
+        points = [Point(random.randint(-100, 100), random.randint(-100, 100)) for _ in range(self.n)]
 
         # Find centroid to sort the points by their polar angle relative to the centroid
-        centroid_x = sum(p.point.x for p in points) / self.n
-        centroid_y = sum(p.point.y for p in points) / self.n
-        centroid = Vertex(Point(centroid_x, centroid_y))
+        centroid_x = sum(p.x for p in points) / self.n
+        centroid_y = sum(p.y for p in points) / self.n
+        centroid = Point(centroid_x, centroid_y)
 
         # Sorting points based on the angle with respect to the centroid ensures a simple polygon
         def polar_angle(vertex):
-            return math.atan2(vertex.point.y - centroid.point.y, vertex.point.x - centroid.point.x)
+            return math.atan2(vertex.y - centroid.y, vertex.x - centroid.x)
 
         points.sort(key=polar_angle)
 
-        # Store sorted points as vertices of the polygon
-        self.vertices = points
+        for p in points:
+            self.vertices.append(Vertex(p))
 
     def get_vertices(self):
         return [(p.point.x, p.point.y) for p in self.vertices]
-    
+
     def get_vertices_of_face(self, face: Face):
         """
         Get the vertices in a face in the order they appear along the boundary.
@@ -134,7 +137,7 @@ class DCEL:
                 break
 
         return vertices
-    
+
     def are_vertices_in_same_face(self, v1: Vertex, v2: Vertex, face: Face):
         """
         Check if two vertices belong to the same face.
@@ -179,7 +182,7 @@ class DCEL:
             half_edges[i].next = half_edges[next_index]
             half_edges[i].prev = half_edges[prev_index]
             half_edges[i].incident_face = face
-            self.vertices[i].incident_edge = half_edges[i]
+            self.vertices[i].incident_edge.append(half_edges[i])
 
             # Twin edge (opposite direction)
             twin_half_edges[i].origin = self.vertices[(n - i) % n]
@@ -202,7 +205,9 @@ class DCEL:
         print("Vertices:")
         vertex_table = []
         for vertex in self.vertices:
-            vertex_table.append([vertex.id, f"({vertex.point.x}, {vertex.point.y})", vertex.incident_edge.id])
+            incident_edges = [edge.id for edge in vertex.incident_edge] if vertex.incident_edge else []
+            incident_edges_str = ', '.join(map(str, incident_edges)) if isinstance(incident_edges, list) else "None"
+            vertex_table.append([vertex.id, f"({vertex.point.x}, {vertex.point.y})", incident_edges_str])
         print(tabulate(vertex_table, headers=["Vertex ID", "Coordinates", "Incident Edge ID"], tablefmt="grid"))
 
         # Display half-edges
@@ -211,11 +216,11 @@ class DCEL:
         for edge in self.half_edges:
             half_edge_table.append(
                 [edge.id, edge.origin.id, edge.twin.id if edge.twin else "None", edge.next.id if edge.next else "None",
-                    edge.prev.id if edge.prev else "None", edge.incident_face.id if edge.incident_face else "None",
-                    edge.helper.id if edge.helper else "None"])
+                 edge.prev.id if edge.prev else "None", edge.incident_face.id if edge.incident_face else "None",
+                 edge.helper.id if edge.helper else "None"])
         print(tabulate(half_edge_table,
                        headers=["Half-Edge ID", "Origin Vertex", "Twin Edge ID", "Next Edge ID", "Previous Edge ID",
-                           "Incident Face ID", "Edge Helper"], tablefmt="grid"))
+                                "Incident Face ID", "Edge Helper"], tablefmt="grid"))
 
         # Display faces
         print("\nFaces:")
@@ -243,50 +248,49 @@ class DCEL:
         half_edge_2.twin = half_edge_1
 
         # Step 2: Locate the half-edges around v1 and v2 that will be affected
+        # These edges should correspond to the same incident face
         # These half-edges are part of the existing face that will be split
-        incident_edge_v1 = v1.incident_edge
-        incident_edge_v2 = v2.incident_edge
+        find_common_incident_edges = lambda v1, v2: next(
+            ((e1, e2) for e1 in v1.incident_edge for e2 in v2.incident_edge if
+             e1.incident_face.id == e2.incident_face.id), (None, None))
+        incident_edge_v1, incident_edge_v2 = find_common_incident_edges(v1, v2)
 
         # Step 3: Adjust next and prev pointers for the new diagonal edges
         # Find the half-edges that come before and after the new diagonal in the face loop
 
-        # v1 -> v2 (clockwise)
         half_edge_1.next = incident_edge_v2
-        half_edge_1.prev = incident_edge_v1.prev
-
-        # v2 -> v1 (counter-clockwise)
         half_edge_2.next = incident_edge_v1
-        half_edge_2.prev = incident_edge_v2.prev
 
-        # Adjust the existing half-edges to account for the diagonal
-        incident_edge_v1.prev.next = half_edge_1
-        incident_edge_v2.prev.next = half_edge_2
+        half_edge_1.prev = incident_edge_v1.prev
+        half_edge_2.prev = incident_edge_v2.prev
 
         incident_edge_v1.prev = half_edge_2
         incident_edge_v2.prev = half_edge_1
 
+        half_edge_1.prev.next = half_edge_1
+        half_edge_2.prev.next = half_edge_2
+
         # Step 4: Create the new face
-        new_face = Face(outer_component=half_edge_1)
-        self.faces[len(self.faces) - 1].outer_component = half_edge_2
+        new_face = Face(outer_component=half_edge_2)
+        self.faces[incident_edge_v2.incident_face.id].outer_component = half_edge_1
         self.faces.append(new_face)
 
         # Step 5: Update the incident face for the new diagonal half-edges
-        half_edge_1.incident_face = incident_edge_v1.incident_face
         half_edge_2.incident_face = new_face
+        half_edge_1.incident_face = self.faces[incident_edge_v2.incident_face.id]
 
-        # Update all affected half-edges incident face for the new face
+        # Update all affected half-edges incident face for the old face
         current_edge = half_edge_2.next
         while current_edge != half_edge_2:
-            current_edge.incident_face = new_face
+            current_edge.incident_face = half_edge_2.incident_face
             current_edge = current_edge.next
-
-        # Step 6: Update the vertex incident edges
-        v1.incident_edge = half_edge_1
-        v2.incident_edge = half_edge_2
 
         # Step 7: Add the new half-edges to the DCEL
         self.half_edges.append(half_edge_1)
         self.half_edges.append(half_edge_2)
+
+        v1.incident_edge.append(half_edge_1)
+        v2.incident_edge.append(half_edge_2)
 
     def plot_dcel(self):
         """
