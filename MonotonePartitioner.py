@@ -1,5 +1,3 @@
-from matplotlib import pyplot as plt, animation
-
 from elements.StatusTree import StatusTree
 
 
@@ -11,10 +9,10 @@ def is_left_turn(prev, current, next_vertex):
 
 class MonotonePartitioner:
     def __init__(self, dcel):
+        self.new_diagonals = []
         self.dcel = dcel  # The DCEL representation of the original polygon
         self.status_tree = StatusTree()  # Status structure (active edges) for the sweep line
         self.vertex_types = {}  # To store classified vertices
-        self.new_diagonals = []
 
     def classify_vertices(self):
         """ Classifies vertices into start, end, split, merge, and regular """
@@ -65,20 +63,9 @@ class MonotonePartitioner:
             else:
                 self.handle_regular_vertex(vertex)
 
-    def animate_sweep_line_partition(self):
-        self.perform_sweep_line_partition()
-        fig = plt.figure()
-        plt.axis('off')
-
-        ims = []
-        for image in self.dcel.images:
-            im = plt.imshow(image, animated=True)
-            ims.append([im])
-
-        ani = animation.ArtistAnimation(fig, ims, interval=500, blit=True, repeat_delay=1000)
-        ani.save('sweep_line_partition.mp4', writer='ffmpeg')
-
-        plt.close(fig)
+        # Add diagonals to the DCEL
+        for vertex1, vertex2 in self.new_diagonals:
+            self.add_diagonal_to_dcel(vertex1, vertex2)
 
     def handle_start_vertex(self, vertex):
         """ Handle start vertex during the sweep """
@@ -99,9 +86,9 @@ class MonotonePartitioner:
         if edge.helper and self.vertex_types[edge.helper.id] == 'merge':
             self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id, left_edge_id=edge.id,
                                 helper_vertex_id=edge.helper.id)
-            self.add_diagonal_to_dcel(edge.helper, vertex)
-            self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id,
-                                helper_vertex_id=edge.helper.id)
+            self.add_diagonal(edge.helper, vertex)
+            self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id, add_diagonal=True,
+                                start=edge.helper, end=vertex)
         self.status_tree.delete(edge)
         print(f"Removing edge {edge} from Status Tree")
 
@@ -114,9 +101,9 @@ class MonotonePartitioner:
         self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id, left_edge_id=left_edge.id)
         if left_edge:
             # Add a diagonal connecting V to Helper(E)
-            self.add_diagonal_to_dcel(left_edge.helper, vertex)
-            self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id,
-                                helper_vertex_id=left_edge.helper.id)
+            self.add_diagonal(left_edge.helper, vertex)
+            self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id, add_diagonal=True,
+                                start=left_edge.helper, end=vertex)
             # Set the new helper for the left edge
             left_edge.helper = vertex
 
@@ -135,9 +122,9 @@ class MonotonePartitioner:
         if edge and self.vertex_types[edge.helper.id] == 'merge':
             self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id, left_edge_id=edge.id,
                                 helper_vertex_id=edge.helper.id)
-            self.add_diagonal_to_dcel(edge.helper, vertex)
-            self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id,
-                                helper_vertex_id=edge.helper.id)
+            self.add_diagonal(edge.helper, vertex)
+            self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id, add_diagonal=True,
+                                start=edge.helper, end=vertex)
         self.status_tree.delete(edge)
         print(f"Removing edge {edge} from Status Tree")
 
@@ -146,9 +133,9 @@ class MonotonePartitioner:
         if left_edge and self.vertex_types[left_edge.helper.id] == 'merge':
             self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id, left_edge_id=left_edge.id,
                                 helper_vertex_id=left_edge.helper.id)
-            self.add_diagonal_to_dcel(left_edge.helper, vertex)
-            self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id,
-                                helper_vertex_id=left_edge.helper.id)
+            self.add_diagonal(left_edge.helper, vertex)
+            self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id, add_diagonal=True,
+                                start=left_edge.helper, end=vertex)
         left_edge.helper = vertex
 
     def handle_regular_vertex(self, vertex):
@@ -163,9 +150,9 @@ class MonotonePartitioner:
             if edge and self.vertex_types[edge.helper.id] == 'merge':
                 self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id, left_edge_id=edge.id,
                                     helper_vertex_id=edge.helper.id)
-                self.add_diagonal_to_dcel(edge.helper, vertex)
-                self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id,
-                                    helper_vertex_id=edge.helper.id)
+                self.add_diagonal(edge.helper, vertex)
+                self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id, add_diagonal=True,
+                                    start=edge.helper, end=vertex)
             self.status_tree.delete(edge)
             print(f"Removing edge {edge} from Status Tree")
             new_edge = vertex.incident_edge[0]
@@ -179,10 +166,16 @@ class MonotonePartitioner:
             if edge and self.vertex_types[edge.helper.id] == 'merge':
                 self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id, left_edge_id=edge.id,
                                     helper_vertex_id=edge.helper.id)
-                self.add_diagonal_to_dcel(edge.helper, vertex)
-                self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id,
-                                    helper_vertex_id=edge.helper.id)
+                self.add_diagonal(edge.helper, vertex)
+                self.dcel.plot_dcel(sweep_line_y=vertex.point.y, current_vertex_id=vertex.id, add_diagonal=True,
+                                    start=edge.helper, end=vertex)
             edge.helper = vertex
+
+    def add_diagonal(self, vertex1, vertex2):
+        """ Add a diagonal between two vertices to make the polygon monotone """
+        if (vertex1, vertex2) in self.new_diagonals: return
+        print(f"Adding diagonal between {vertex1} and {vertex2}")
+        self.new_diagonals.append((vertex1, vertex2))
 
     def add_diagonal_to_dcel(self, vertex1, vertex2):
         if vertex1.id < vertex2.id:

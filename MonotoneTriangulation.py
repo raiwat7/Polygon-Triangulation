@@ -54,26 +54,38 @@ class MonotoneTriangulation:
                     # not_used = []
                     while len(stack) > 1:
                         v = stack.pop()
+                        self.dcel.plot_dcel(current_vertex_id=current_vertex.id, helper_vertex_id=v.id)
                         if diagonal_exist(current_vertex, v, face):
                             self.add_diagonal(current_vertex, v)
+                            self.dcel.plot_dcel(current_vertex_id=current_vertex.id, add_diagonal=True,
+                                                start=current_vertex, end=v)
                     stack.append(top_vertex)
                     stack.append(current_vertex)
                 else:
                     second_top_vertex = stack[-2]
+                    self.dcel.plot_dcel(current_vertex_id=current_vertex.id, helper_vertex_id=second_top_vertex.id)
                     if diagonal_exist(current_vertex, second_top_vertex, face):
                         self.add_diagonal(current_vertex, second_top_vertex)
+                        self.dcel.plot_dcel(current_vertex_id=current_vertex.id, add_diagonal=True,
+                                            start=current_vertex, end=second_top_vertex)
                         stack.pop()
                     stack.append(current_vertex)
             else:
                 second_vertex = stack.pop()
                 top_vertex = stack.pop()
+                self.dcel.plot_dcel(current_vertex_id=current_vertex.id, helper_vertex_id=second_vertex.id)
                 if second_vertex.chain_val != current_vertex.chain_val and diagonal_exist(current_vertex, second_vertex,
                                                                                           face):
                     self.add_diagonal(current_vertex, second_vertex)
+                    self.dcel.plot_dcel(current_vertex_id=current_vertex.id, add_diagonal=True, start=current_vertex,
+                                        end=second_vertex)
                     stack.append(second_vertex)
                     stack.append(current_vertex)
                 elif diagonal_exist(top_vertex, current_vertex, face):
+                    self.dcel.plot_dcel(current_vertex_id=current_vertex.id, helper_vertex_id=top_vertex.id)
                     self.add_diagonal(top_vertex, current_vertex)
+                    self.dcel.plot_dcel(current_vertex_id=current_vertex.id, add_diagonal=True, start=top_vertex,
+                                        end=current_vertex)
                     stack.append(top_vertex)
                     stack.append(current_vertex)
                 else:
@@ -83,8 +95,11 @@ class MonotoneTriangulation:
 
         # Connect the last vertex to the rest of the stack except top & bottom
         for i in range(1, len(stack) - 1):
+            self.dcel.plot_dcel(current_vertex_id=vertices[-1].id, helper_vertex_id=stack[i].id)
             if diagonal_exist(vertices[-1], stack[i], face):
                 self.add_diagonal(vertices[-1], stack[i])
+                self.dcel.plot_dcel(current_vertex_id=vertices[-1].id, add_diagonal=True, start=vertices[-1],
+                                    end=stack[i])
 
     def triangulate(self):
         """
@@ -95,5 +110,5 @@ class MonotoneTriangulation:
         for face in monotone_faces:
             self.triangulate_monotone_polygon(face)
 
-        for (a, b) in self.new_diagonals:
-            self.add_diagonal_to_dcel(a, b)
+        for vertex1, vertex2 in self.new_diagonals:
+            self.add_diagonal_to_dcel(vertex1, vertex2)
