@@ -1,7 +1,9 @@
 import math
 import random
+from io import BytesIO
 
 import matplotlib.pyplot as plt
+from PIL import Image
 from tabulate import tabulate
 
 from elements.Face import Face
@@ -93,11 +95,14 @@ class DCEL:
             self.vertices = []
             self.half_edges = []
             self.faces = []
+            self.images = []
             self.random_simple_polygon()
+
         else:
             self.vertices = vertices if vertices else []
             self.half_edges = half_edges if half_edges else []
             self.faces = faces if faces else []
+            self.images = []
 
         self.create_polygon()
 
@@ -292,7 +297,7 @@ class DCEL:
         v1.incident_edge.append(half_edge_1)
         v2.incident_edge.append(half_edge_2)
 
-    def plot_dcel(self):
+    def plot_dcel(self, sweep_line_y=None, current_vertex_id=None, helper_vertex_id=None, left_edge_id=None):
         """
         Plots the DCEL with vertex and half-edge annotations.
         Vertices are annotated with their coordinates, and half-edges are annotated with their IDs.
@@ -300,21 +305,56 @@ class DCEL:
         """
         plt.figure(figsize=(8, 8))
 
+        if sweep_line_y is not None:
+            # Plot the sweep line
+            plt.axhline(y=sweep_line_y, color='r', label='Sweep Line')
+
         # Plot vertices and annotate them
         for vertex in self.vertices:
-            plt.plot(vertex.point.x, vertex.point.y, 'bo')  # Plot vertex as a blue dot
-            plt.text(vertex.point.x, vertex.point.y, f"V{vertex.id}", fontsize=9, ha='right')
+            if current_vertex_id is not None:
+                if vertex.id == current_vertex_id:
+                    plt.plot(vertex.point.x, vertex.point.y, 'ro')
+                    plt.text(vertex.point.x, vertex.point.y, f"V{vertex.id}", fontsize=9, ha='right')
+                else:
+                    if helper_vertex_id is not None:
+                        if vertex.id == helper_vertex_id:
+                            plt.plot(vertex.point.x, vertex.point.y, 'go')
+                            plt.text(vertex.point.x, vertex.point.y, f"V{vertex.id}", fontsize=9, ha='right')
+                        else:
+                            plt.plot(vertex.point.x, vertex.point.y, 'bo')
+                            plt.text(vertex.point.x, vertex.point.y, f"V{vertex.id}", fontsize=9, ha='right')
+                    else:
+                        plt.plot(vertex.point.x, vertex.point.y, 'bo')
+                        plt.text(vertex.point.x, vertex.point.y, f"V{vertex.id}", fontsize=9, ha='right')
+            else:
+                plt.plot(vertex.point.x, vertex.point.y, 'bo')  # Plot vertex as a blue dot
+                plt.text(vertex.point.x, vertex.point.y, f"V{vertex.id}", fontsize=9, ha='right')
 
         # Plot edges and annotate half-edges at 1/3rd and 2/3rd points
         for half_edge in self.half_edges:
             origin = self.vertices[half_edge.origin.id]
             destination = self.vertices[half_edge.next.origin.id]
 
-            # Plot the edge between origin and destination
-            plt.plot([origin.point.x, destination.point.x], [origin.point.y, destination.point.y], 'k-')
+            if left_edge_id is not None:
+                if half_edge.id == left_edge_id or half_edge.twin.id == left_edge_id:
+                    plt.plot([origin.point.x, destination.point.x], [origin.point.y, destination.point.y], 'g-')
+                else:
+                    plt.plot([origin.point.x, destination.point.x], [origin.point.y, destination.point.y], 'k-')
+            else:
+                plt.plot([origin.point.x, destination.point.x], [origin.point.y, destination.point.y], 'k-')
 
         # Set equal scaling and remove axis for better visualization
         plt.axis('equal')
         plt.grid(False)
         plt.gca().set_axis_off()  # Hide axes
-        plt.show()
+
+        # Save the plot to a BytesIO object
+        buf = BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0.1)  # Save the figure to the buffer
+        buf.seek(0)  # Move the buffer cursor to the beginning
+
+        # Load the image from the buffer
+        image = Image.open(buf)
+        self.images.append(image)  # Store the image in self.images
+
+        plt.close()

@@ -179,31 +179,6 @@ class DualGraph:
         # Run DFS coloring on the faces of the triangulated polygon
         self.dfs_color_faces(starting_face, available_colors)
 
-    # def plot_colored_dcel(self):
-    #     plt.figure(figsize=(8, 8))
-    #
-    #     # Define colors corresponding to 0, 1, 2
-    #     color_map = {0: 'red', 1: 'green', 2: 'blue'}
-    #
-    #     # Plot vertices with their assigned colors
-    #     for vertex in self.dcel.vertices:
-    #         plt.plot(vertex.point.x, vertex.point.y, 'o', color=color_map[vertex.color], markersize=10)  # Color vertex
-    #         plt.text(vertex.point.x, vertex.point.y, f"V{vertex.id}", fontsize=9, ha='right')
-    #
-    #     # Plot edges
-    #     for half_edge in self.dcel.half_edges:
-    #         origin = self.dcel.vertices[half_edge.origin.id]
-    #         destination = self.dcel.vertices[half_edge.next.origin.id]
-    #
-    #         # Plot the edge between origin and destination
-    #         plt.plot([origin.point.x, destination.point.x], [origin.point.y, destination.point.y], 'k-')
-    #
-    #     # Set equal scaling and remove axis for better visualization
-    #     plt.axis('equal')
-    #     plt.grid(False)
-    #     plt.gca().set_axis_off()  # Hide axes
-    #     plt.show()
-
     def plot_colored_dcel(self):
         plt.figure(figsize=(8, 8))
 
