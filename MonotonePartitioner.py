@@ -1,3 +1,7 @@
+# Group ID 14 (21114021 & 21114078) - Ashutosh Kumar and Raiwat Bapat
+# Date: September 27 2024
+# MonotonePartitioner.py : Contains the Implementation of the Monotone Partitioner Algorithm for Polygon Triangulation.
+
 from elements.StatusTree import StatusTree
 
 

@@ -1,3 +1,7 @@
+# Group ID 14 (21114021 & 21114078) - Ashutosh Kumar and Raiwat Bapat
+# Date: September 30 2024
+# DualGraph.py : Contains the Implementation of the Algorithm to Construct the Dual Graph of a Triangulated Polygon
+
 from matplotlib import pyplot as plt
 
 from elements import Face

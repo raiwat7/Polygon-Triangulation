@@ -1,3 +1,7 @@
+# Group ID 14 (21114021 & 21114078) - Ashutosh Kumar and Raiwat Bapat
+# Date: September 27 2024
+# MonotoneTriangulation.py : Contains the Implementation of the Algorithm corresponding to Triangulation of Monotone Polygons Algorithm.
+
 from collections import deque
 
 from elements.DCEL import DCEL, Face, diagonal_exist

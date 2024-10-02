@@ -1,3 +1,7 @@
+# Group ID 14 (21114021 & 21114078) - Ashutosh Kumar and Raiwat Bapat
+# Date: September 27 2024
+# StatusTree.py : Contains the implementation of the binary search tree for the sweep status structure for Monotone Partitioning.
+
 from elements.StatusNode import StatusNode
 
 

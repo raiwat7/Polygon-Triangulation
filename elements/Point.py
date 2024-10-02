@@ -1,3 +1,7 @@
+# Group ID 14 (21114021 & 21114078) - Ashutosh Kumar and Raiwat Bapat
+# Date: September 24 2024
+# Point.py : Contains the implementation of the Point Object
+
 import math
 
 

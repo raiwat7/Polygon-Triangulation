@@ -1,3 +1,7 @@
+# Group ID 14 (21114021 & 21114078) - Ashutosh Kumar and Raiwat Bapat
+# Date: September 24 2024
+# HalfEdge.py : Contains the implementation of the Half Edge object of Doubly Connected Edge List (DCEL) data structure.
+
 class HalfEdge:
     _id_counter = 0  # Class variable to assign unique IDs to half-edges
 
