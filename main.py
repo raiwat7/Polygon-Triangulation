@@ -6,7 +6,28 @@ from elements.Point import Point
 from elements.Vertex import Vertex
 
 
-def main():
+def triangulate_and_animate(polygon):
+    polygon.plot_dcel_polygon()
+
+    monotone_partitioner = MonotonePartitioner(polygon)
+    monotone_partitioner.perform_sweep_line_partition()
+    polygon.plot_dcel_polygon()
+
+    monotone_triangulation = MonotoneTriangulation(polygon)
+    monotone_triangulation.triangulate()
+    polygon.plot_dcel_polygon()
+
+    dual_graph = DualGraph(polygon)
+    dual_graph.build_dual_graph()
+    dual_graph.plot_dual_graph()
+
+    dual_graph.three_coloring()
+    dual_graph.plot_dcel_and_dual_graph()
+    dual_graph.plot_colored_dcel_with_dual_graph()
+
+    polygon.animate_complete_triangulation()
+
+def polygon_with_34_vertices():
     polygon = DCEL(
         vertices=[
             Vertex(Point(10.07, 10)),  # Starting at the top
@@ -45,24 +66,25 @@ def main():
             Vertex(Point(11.54, 6.96)),
         ]
     )
-    polygon.plot_dcel_polygon()
+    triangulate_and_animate(polygon)
 
-    monotone_partitioner = MonotonePartitioner(polygon)
-    monotone_partitioner.perform_sweep_line_partition()
-    polygon.plot_dcel_polygon()
+def polygon_with_15_vertices():
+    polygon_example_book = DCEL(
+        vertices=[Vertex(Point(47, 172)), Vertex(Point(18, 152)), Vertex(Point(39 , 127)), Vertex(Point(16, 113)), Vertex(Point(34, 99)), Vertex(Point(7, 68)),
+                  Vertex(Point(29, 42)), Vertex(Point(60, 54)), Vertex(Point(94, 5)), Vertex(Point(86, 78)), Vertex(Point(120, 65)), Vertex(Point(153, 128)),
+                  Vertex(Point(107, 109)), Vertex(Point(94, 168)), Vertex(Point(70, 158))])
 
-    monotone_triangulation = MonotoneTriangulation(polygon)
-    monotone_triangulation.triangulate()
-    polygon.plot_dcel_polygon()
+    triangulate_and_animate(polygon_example_book)
 
-    dual_graph = DualGraph(polygon)
-    dual_graph.build_dual_graph()
-    dual_graph.plot_dual_graph()
+def generate_and_triangulate_random_polygon(n):
+    # Random Polygon Generation
+    polygon_example = DCEL(n)
+    polygon_example.plot_dcel()
+    polygon_example.display_dcel()
+    triangulate_and_animate(polygon_example)
 
-    dual_graph.three_coloring()
-    dual_graph.plot_colored_dcel_with_dual_graph()
-
-    polygon.animate_complete_triangulation()
+def main():
+    polygon_with_34_vertices()
 
 if __name__ == "__main__":
     main()
