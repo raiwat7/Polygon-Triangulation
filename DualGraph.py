@@ -88,7 +88,7 @@ class DualGraph:
             # Plot the node (centroid of the face)
             centroid = face.centroid
             plt.scatter(centroid.x, centroid.y, c='blue')  # Plot centroids as blue points
-            plt.text(centroid.x, centroid.y, f'{face.id}', fontsize=12, ha='center')  # Label the face ID
+            plt.text(centroid.x, centroid.y, f'{face.id}', fontsize=9, ha='right')  # Label the face ID
 
             # Plot edges to adjacent faces
             for adjacent_face in adjacent_faces:
@@ -126,8 +126,8 @@ class DualGraph:
         for face, adjacent_faces in self.dual_graph.items():
             # Plot the node (centroid of the face)
             centroid = face.centroid
-            plt.scatter(centroid.x, centroid.y, c='red', zorder=3)  # Plot centroids as red points for dual graph
-            plt.text(centroid.x, centroid.y, f'{face.id}', fontsize=12, ha='center', color='red')  # Label the face ID
+            plt.scatter(centroid.x, centroid.y, c='black', zorder=3)  # Plot centroids as red points for dual graph
+            plt.text(centroid.x, centroid.y, f'{face.id}', fontsize=9, ha='right', color='red')  # Label the face ID
 
             # Plot edges to adjacent faces
             for adjacent_face in adjacent_faces:
