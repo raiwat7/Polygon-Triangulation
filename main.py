@@ -1,3 +1,7 @@
+# Group ID 14 (21114021 & 21114078) - Ashutosh Kumar and Raiwat Bapat
+# Date: October 2 2024
+# main.py : Contains a sample code to demonstrate the working of the implemented algorithms
+
 from DualGraph import DualGraph
 from MonotonePartitioner import MonotonePartitioner
 from MonotoneTriangulation import MonotoneTriangulation
