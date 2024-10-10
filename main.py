@@ -20,6 +20,7 @@ def triangulate_and_animate(polygon):
     monotone_triangulation = MonotoneTriangulation(polygon)
     monotone_triangulation.triangulate()
     polygon.plot_dcel_polygon()
+    polygon.display_dcel()
 
     dual_graph = DualGraph(polygon)
     dual_graph.build_dual_graph()
